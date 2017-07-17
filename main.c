@@ -5,7 +5,7 @@
 #define ARP_REQUEST 1
 #define ARP_REPLY 2
 
-typedef struct arphdr {
+typedef struct arphdr{
 
     u_int16_t htype;
     u_int16_t ptype;
@@ -18,7 +18,10 @@ typedef struct arphdr {
     u_char tpa [4];
 }arphdr_t;
 
-#define MAXBYTE2CAPTURE 2048
+typedef struct tcphdr{
+    u_char sport [4];
+    u_char dport [4];
+};
 
 int main(void){
 
@@ -34,6 +37,8 @@ int main(void){
     int res;
     arphdr_t *arpheader = NULL;
     int i;
+    struct tcphdr *tcphdr = NULL;
+
 
     /* Define the device */
     dev = pcap_lookupdev(errbuf);
@@ -58,23 +63,41 @@ int main(void){
     }
     /* Grab a packet */
     while(1){
-       res = pcap_next(handle, &header);
+       pcap_next(handle, &header);
+
        if(res == NULL)
             continue;
        else {
             printf("Jacked a packet with length of [%d]\n", header.len);
-            arpheader = (struct arphr *)(res+14);
+            arpheader = (struct arphr *)(res);
+            tcphdr = (struct tcphdr *)(res+14+20);
 
-
-            printf("sender MAC: ");
+            printf("Sender MAC: ");
             for(i=0; i<6;i++)printf("%02x:", arpheader->sha[i]);
             printf("\nSender IP: ");
             for(i=0; i<4;i++)printf("%d.", arpheader->spa[i]);
             printf("\nTarget MAC: ");
-            for(i=0; i<6;i++)printf("%02x:", arpheader->tha[i]);}
+            for(i=0; i<6;i++)printf("%02x:", arpheader->tha[i]);
+            printf("\nTarget IP: ");
+            for(i=0; i<4; i++)printf("%d.", arpheader->tpa[i]);
+            printf("\nSender TCP Port: ");
+            for(i=0; i<4 ; i++)printf("%d.", tcphdr-> sport[i]);
+            printf("\nTarget TCP Port: ");
+            for(i=0; i<4 ; i++)printf("%d.", tcphdr-> dport[i]);
+
+
+            printf("\nData: ");
+
+
+
+
+            printf("\n====================================================\n");
+
+
+       }
 
 
     }
-
+return 0;
 
 }
