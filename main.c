@@ -2,26 +2,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARP_REQUEST 1
-#define ARP_REPLY 2
-
 typedef struct arphdr{
 
-    u_int16_t htype;
-    u_int16_t ptype;
-    u_char hlen;
-    u_char plen;
-    u_int16_t oper;
-    u_char sha [6];
-    u_char spa [4];
-    u_char tha [6];
-    u_char tpa [4];
+    u_char dmac [6];
+    u_char smac [6];
+
 }arphdr_t;
 
+typedef struct iphdr{
+
+    u_char sip [4];
+    u_char dip [4];
+
+}iphdr_t;
+
 typedef struct tcphdr{
-    u_char sport [4];
-    u_char dport [4];
-};
+
+    u_char sport [2];
+    u_char dport [2];
+
+}tcphdr_t;
+
+typedef struct dhdr{
+
+}dhdr_t;
 
 int main(void){
 
@@ -35,10 +39,11 @@ int main(void){
     struct pcap_pkthdr header;	/* The header that pcap gives us */
     const u_char *pkt_data;		/* The actual packet */
     int res;
-    arphdr_t *arpheader = NULL;
     int i;
-    struct tcphdr *tcphdr = NULL;
-
+    arphdr_t *arpheader = NULL;
+    iphdr_t *ipheader = NULL;
+    tcphdr_t *tcpheader = NULL;
+    dhdr_t *dataheader = NULL;
 
     /* Define the device */
     dev = pcap_lookupdev(errbuf);
@@ -63,33 +68,34 @@ int main(void){
     }
     /* Grab a packet */
     while(1){
-       pcap_next(handle, &header);
+       res = pcap_next(handle, &header);
 
        if(res == NULL)
             continue;
        else {
             printf("Jacked a packet with length of [%d]\n", header.len);
             arpheader = (struct arphr *)(res);
-            tcphdr = (struct tcphdr *)(res+14+20);
+            ipheader = (struct iphdr *)(res+26);
+            tcpheader = (struct tcphdr *)(res+34);
 
-            printf("Sender MAC: ");
-            for(i=0; i<6;i++)printf("%02x:", arpheader->sha[i]);
-            printf("\nSender IP: ");
-            for(i=0; i<4;i++)printf("%d.", arpheader->spa[i]);
-            printf("\nTarget MAC: ");
-            for(i=0; i<6;i++)printf("%02x:", arpheader->tha[i]);
-            printf("\nTarget IP: ");
-            for(i=0; i<4; i++)printf("%d.", arpheader->tpa[i]);
+
+            printf("Destination MAC: ");
+            for(i=0; i<6;i++)printf("%02x:", arpheader->dmac[i]);
+            printf("\nSource MAC: ");
+            for(i=0; i<6;i++)printf("%02x:", arpheader->smac[i]);
+
+            printf("\nSource IP: ");
+            for(i=0; i<4;i++)printf("%d.", ipheader->sip[i]);
+            printf("\nDestination IP: ");
+            for(i=0; i<4; i++)printf("%d.", ipheader->dip[i]);
+
             printf("\nSender TCP Port: ");
-            for(i=0; i<4 ; i++)printf("%d.", tcphdr-> sport[i]);
+            for(i=0; i<2; i++)printf("%d", tcpheader->sport[i]);
             printf("\nTarget TCP Port: ");
-            for(i=0; i<4 ; i++)printf("%d.", tcphdr-> dport[i]);
+            for(i=0; i<2; i++)printf("%d", tcpheader->dport[i]);
 
 
-            printf("\nData: ");
-
-
-
+            printf("\nData: ")
 
             printf("\n====================================================\n");
 
