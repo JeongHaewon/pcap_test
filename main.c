@@ -23,10 +23,6 @@ typedef struct tcphdr{
 
 }tcphdr_t;
 
-typedef struct dhdr{
-
-}dhdr_t;
-
 int main(void){
 
     pcap_t *handle;			/* Session handle */
@@ -36,14 +32,14 @@ int main(void){
     char filter_exp[] = "port 80";	/* The filter expression */
     bpf_u_int32 mask;		/* Our netmask */
     bpf_u_int32 net;		/* Our IP */
-    struct pcap_pkthdr header;	/* The header that pcap gives us */
+    struct pcap_pkthdr *header;	/* The header that pcap gives us */
     const u_char *pkt_data;		/* The actual packet */
     int res;
     int i;
     arphdr_t *arpheader = NULL;
     iphdr_t *ipheader = NULL;
     tcphdr_t *tcpheader = NULL;
-    dhdr_t *dataheader = NULL;
+    const char *payload;
 
     /* Define the device */
     dev = pcap_lookupdev(errbuf);
@@ -68,15 +64,15 @@ int main(void){
     }
     /* Grab a packet */
     while(1){
-       res = pcap_next(handle, &header);
+       res = pcap_next_ex(handle, &header, &pkt_data);
 
-       if(res == NULL)
+       if(res == 0 || pkt_data == NULL)
             continue;
        else {
-            printf("Jacked a packet with length of [%d]\n", header.len);
-            arpheader = (struct arphr *)(res);
-            ipheader = (struct iphdr *)(res+26);
-            tcpheader = (struct tcphdr *)(res+34);
+            printf("Jacked a packet with length of [%d]\n", (*header).len);
+            arpheader = (struct arphr *)(pkt_data);
+            ipheader = (struct iphdr *)(pkt_data+26);
+            tcpheader = (struct tcphdr *)(pkt_data+34);
 
 
             printf("Destination MAC: ");
@@ -95,8 +91,9 @@ int main(void){
             for(i=0; i<2; i++)printf("%d", tcpheader->dport[i]);
 
 
-            printf("\nData: ")
-
+            printf("\n\nData: ");
+            payload = (u_char *)(pkt_data+54);
+            printf(payload);
             printf("\n====================================================\n");
 
 
