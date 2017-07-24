@@ -60,7 +60,7 @@ int main(int arvc,char* argv[])
     {
         number = pcap_next_ex(handle, &pkthdr, &pkt_data);
 
-        if(number != 1,0 || pkt_data == NULL)
+        if(number != 1 || pkt_data == NULL)
         {
             continue;
         }
@@ -68,12 +68,14 @@ int main(int arvc,char* argv[])
 
         ethheader = (struct ethhdr_t *)(pkt_data);
         ipheader = (struct iphdr_t *)(pkt_data+14);
-        tcpheader = (struct tcphdr_t *)(pkt_data+14+((ipheader->versionheaderl)&15)*4);
+        int ipheaderlength = (ipheader->versionheaderl)&0X0f;
+        tcpheader = (struct tcphdr_t *)(pkt_data+14+ipheaderlength*4);
+        int tcpheaderlength = (tcpheader->hdrl) >> 4;
 
         if(ntohs(ethheader->type) == 0x0800);
         {
 
-            if(ntohs(tcpheader->sport) == 80 || ntohs(tcpheader->dport))
+            if(ntohs(tcpheader->sport) == 80)
             {
 
 
@@ -92,7 +94,7 @@ int main(int arvc,char* argv[])
                 printf("Source port: %d\n", ntohs(tcpheader->sport));
                 printf("Destination port: %d\n", ntohs(tcpheader->dport));
 
-                payload = (u_char *)(pkt_data+14+((ipheader->versionheaderl)&15)*4+((tcpheader->hdrl)&240)/16*4);
+                payload = (u_char *)(pkt_data+14+ipheaderlength*4+tcpheaderlength*4);
                 printf(payload);
 
                 printf("\n-------------------------------------------------\n");
